@@ -29,52 +29,87 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'పద గమనం',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: Center(
+      backgroundColor: const Color(0xFFFFF7FF),
+      body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const SizedBox(height: 30),
+
             const Text(
               'పద గమనం',
               style: TextStyle(
-                fontSize: 38,
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 12),
+            const Spacer(),
+
+            const Text(
+              'పద గమనం',
+              style: TextStyle(
+                fontSize: 52,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 18),
 
             const Text(
               'తెలుగు పదాల ప్రయాణం',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 24,
               ),
             ),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 45),
 
-            ElevatedButton(
-              onPressed: () {},
-              child: const Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 35,
-                  vertical: 15,
-                ),
-                child: Text(
+            SizedBox(
+              width: 300,
+              height: 65,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GamePage(),
+                    ),
+                  );
+                },
+                child: const Text(
                   'ఆట ప్రారంభించు',
-                  style: TextStyle(fontSize: 18),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
+
+            const Spacer(),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class GamePage extends StatelessWidget {
+  const GamePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('పద గమనం'),
+      ),
+      body: const Center(
+        child: Text(
+          'ఆట ప్రారంభమైంది! 🧩',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
