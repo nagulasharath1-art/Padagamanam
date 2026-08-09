@@ -32,116 +32,192 @@ class CrosswordPage extends StatefulWidget {
 }
 
 class _CrosswordPageState extends State<CrosswordPage> {
-  // true = white answer cell
-  // false = black blocked cell
+  // true = white cell
+  // false = black cell
+  //
+  // Crossword pattern
   final List<List<bool>> grid = [
-    [true, true, true, false, true, true, true, true, false, true, true],
-    [true, false, true, false, true, false, true, false, true, false, true],
-    [true, true, true, true, true, true, true, true, true, true, true],
-    [false, true, false, true, true, false, true, false, true, false, true],
-    [true, true, true, true, false, true, true, true, false, true, true],
-    [true, false, true, false, true, false, true, false, true, false, true],
-    [true, true, true, true, true, true, true, true, true, true, true],
-    [true, false, true, false, true, false, true, false, true, false, true],
     [true, true, true, false, true, true, true, false, true, true, true],
-    [true, false, true, false, true, false, true, false, true, false, true],
+    [true, true, true, true, true, false, true, true, true, true, true],
+    [true, false, true, true, true, true, true, true, true, false, true],
+    [false, true, true, true, false, true, true, true, false, true, true],
+    [true, true, true, true, true, true, true, true, true, true, true],
+    [true, false, true, true, true, false, true, true, true, false, true],
+    [true, true, true, false, true, true, true, false, true, true, true],
+    [true, true, false, true, true, true, false, true, true, true, true],
+    [true, false, true, true, true, false, true, true, true, false, true],
+    [false, true, true, true, false, true, true, true, false, true, true],
     [true, true, true, true, true, true, true, true, true, true, true],
   ];
 
-  final Map<String, String> answers = {};
+  final Map<String, TextEditingController> controllers = {};
+  final Map<String, FocusNode> focusNodes = {};
 
   int? selectedRow;
   int? selectedCol;
 
-  final List<Map<String, String>> acrossClues = [
-    {
-      'number': '1',
-      'clue': 'తెలుగు భాషకు సంబంధించిన పదం',
-    },
-    {
-      'number': '5',
-      'clue': 'వెలుగు ఇచ్చేది',
-    },
-    {
-      'number': '9',
-      'clue': 'నీటితో నిండిన ప్రదేశం',
-    },
-    {
-      'number': '13',
-      'clue': 'మనసుకు సంబంధించినది',
-    },
-    {
-      'number': '17',
-      'clue': 'పూర్వకాలానికి చెందినది',
-    },
-    {
-      'number': '21',
-      'clue': 'జ్ఞానాన్ని అందించేది',
-    },
-    {
-      'number': '25',
-      'clue': 'ప్రకృతిలో కనిపించేది',
-    },
+  String selectedDirection = 'A';
+
+  final List<String> acrossClues = [
+    'తెలుగు భాషలోని ఒక పదం',
+    'ఉదయం ఉదయించేది',
+    'మన చుట్టూ ఉండేది',
+    'చదువుకు ఉపయోగించేది',
+    'జ్ఞానాన్ని అందించేది',
+    'పూలతో ఉండేది',
+    'నీటితో ప్రవహించేది',
+    'ఆకాశంలో కనిపించేది',
+    'రాత్రివేళ కనిపించేది',
+    'మనసుకు ఇష్టమైనది',
+    'పండుగలో కనిపించేది',
+    'పూర్వకాలానికి చెందినది',
+    'సంగీతంలో వినిపించేది',
+    'చిత్రకళలో ఉపయోగించేది',
+    'ప్రకృతిలో కనిపించే అందం',
+    'ప్రయాణానికి ఉపయోగించేది',
+    'మనిషి నివసించే స్థలం',
+    'సాహిత్యంలో ఒక ప్రక్రియ',
+    'తెలుగులో ప్రసిద్ధమైన పండు',
+    'చెట్టుకు ఉండేది',
+    'వర్షంతో వచ్చేది',
+    'సముద్రంలో కనిపించేది',
+    'ఉదయాన్నే వినిపించేది',
+    'జ్ఞాపకంగా మిగిలేది',
   ];
 
-  final List<Map<String, String>> downClues = [
-    {
-      'number': '2',
-      'clue': 'చదువుకు ఉపయోగించేది',
-    },
-    {
-      'number': '3',
-      'clue': 'ఆకాశంలో కనిపించేది',
-    },
-    {
-      'number': '6',
-      'clue': 'సంతోషానికి వ్యతిరేకం',
-    },
-    {
-      'number': '8',
-      'clue': 'తెలుగు సాహిత్యంలో ఒక ప్రక్రియ',
-    },
-    {
-      'number': '10',
-      'clue': 'నదికి మరో పేరు',
-    },
-    {
-      'number': '14',
-      'clue': 'మనిషి నివసించే ప్రదేశం',
-    },
+  final List<String> downClues = [
+    'ఆకాశంలో కనిపించే వస్తువు',
+    'చదువులో ఉపయోగించేది',
+    'నీటికి సంబంధించినది',
+    'మనసుకు సంబంధించిన భావం',
+    'ప్రకృతిలో కనిపించేది',
+    'వెలుగును ఇచ్చేది',
+    'సంగీతానికి సంబంధించినది',
+    'తెలుగు సాహిత్యంలో ఒక రూపం',
+    'పండుగలో కనిపించేది',
+    'ప్రయాణంలో ఉపయోగించేది',
+    'మనిషి నివసించే ప్రదేశం',
+    'చెట్టులో ఉండేది',
+    'వర్షంతో వచ్చేది',
+    'సముద్రంలో కనిపించేది',
+    'పక్షి నివసించే ప్రదేశం',
+    'పూలతో ఉండేది',
+    'జ్ఞానానికి సంబంధించినది',
+    'పాతకాలానికి చెందినది',
+    'ఉదయానికి సంబంధించినది',
+    'రాత్రిలో కనిపించేది',
+    'కళకు సంబంధించినది',
+    'సంగీతంలో ఒక భాగం',
+    'ప్రకృతిలో ఒక దృశ్యం',
+    'మనిషి భావోద్వేగం',
+    'తెలుగు సంస్కృతికి సంబంధించినది',
+    'జ్ఞాపకంగా మిగిలేది',
   ];
 
-  bool isWhite(int row, int col) {
-    return grid[row][col];
+  @override
+  void initState() {
+    super.initState();
+
+    for (int r = 0; r < grid.length; r++) {
+      for (int c = 0; c < grid[r].length; c++) {
+        if (grid[r][c]) {
+          final key = '$r-$c';
+
+          controllers[key] = TextEditingController();
+          focusNodes[key] = FocusNode();
+
+          focusNodes[key]!.addListener(() {
+            if (focusNodes[key]!.hasFocus) {
+              setState(() {
+                selectedRow = r;
+                selectedCol = c;
+              });
+            }
+          });
+        }
+      }
+    }
   }
 
-  bool startsAcross(int row, int col) {
-    if (!isWhite(row, col)) return false;
-
-    if (col == 0 || !isWhite(row, col - 1)) {
-      return col + 1 < grid[row].length && isWhite(row, col + 1);
+  @override
+  void dispose() {
+    for (final controller in controllers.values) {
+      controller.dispose();
     }
 
-    return false;
+    for (final node in focusNodes.values) {
+      node.dispose();
+    }
+
+    super.dispose();
   }
 
-  bool startsDown(int row, int col) {
-    if (!isWhite(row, col)) return false;
+  bool isWhite(int r, int c) {
+    return grid[r][c];
+  }
 
-    if (row == 0 || !isWhite(row - 1, col)) {
-      return row + 1 < grid.length && isWhite(row + 1, col);
-    }
+  bool startsAcross(int r, int c) {
+    if (!isWhite(r, c)) return false;
 
-    return false;
+    final leftBlocked =
+        c == 0 || !isWhite(r, c - 1);
+
+    final hasRight =
+        c + 1 < grid[r].length &&
+        isWhite(r, c + 1);
+
+    return leftBlocked && hasRight;
+  }
+
+  bool startsDown(int r, int c) {
+    if (!isWhite(r, c)) return false;
+
+    final topBlocked =
+        r == 0 || !isWhite(r - 1, c);
+
+    final hasBottom =
+        r + 1 < grid.length &&
+        isWhite(r + 1, c);
+
+    return topBlocked && hasBottom;
+  }
+
+  bool hasAcross(int r, int c) {
+    if (!isWhite(r, c)) return false;
+
+    final left =
+        c > 0 && isWhite(r, c - 1);
+
+    final right =
+        c + 1 < grid[r].length &&
+        isWhite(r, c + 1);
+
+    return left || right;
+  }
+
+  bool hasDown(int r, int c) {
+    if (!isWhite(r, c)) return false;
+
+    final top =
+        r > 0 && isWhite(r - 1, c);
+
+    final bottom =
+        r + 1 < grid.length &&
+        isWhite(r + 1, c);
+
+    return top || bottom;
   }
 
   Map<String, int> generateNumbers() {
     final Map<String, int> numbers = {};
+
     int number = 1;
 
     for (int r = 0; r < grid.length; r++) {
       for (int c = 0; c < grid[r].length; c++) {
-        if (isWhite(r, c) && (startsAcross(r, c) || startsDown(r, c))) {
+        if (isWhite(r, c) &&
+            (startsAcross(r, c) ||
+                startsDown(r, c))) {
           numbers['$r-$c'] = number;
           number++;
         }
@@ -151,158 +227,164 @@ class _CrosswordPageState extends State<CrosswordPage> {
     return numbers;
   }
 
-  List<List<String>> getSelectedCells() {
-    final result = <List<String>>[];
+  List<List<int>> getWordCells(
+    int row,
+    int col,
+    String direction,
+  ) {
+    if (!isWhite(row, col)) return [];
 
-    if (selectedRow == null || selectedCol == null) {
-      return result;
-    }
+    int r = row;
+    int c = col;
 
-    int r = selectedRow!;
-    int c = selectedCol!;
-
-    bool across = false;
-
-    if (c == 0 || !isWhite(r, c - 1)) {
-      across = c + 1 < grid[r].length && isWhite(r, c + 1);
-    }
-
-    if (across) {
-      int start = c;
-
-      while (start > 0 && isWhite(r, start - 1)) {
-        start--;
+    if (direction == 'A') {
+      while (c > 0 && isWhite(r, c - 1)) {
+        c--;
       }
 
-      int end = c;
+      final cells = <List<int>>[];
 
-      while (end < grid[r].length - 1 && isWhite(r, end + 1)) {
-        end++;
+      while (c < grid[r].length &&
+          isWhite(r, c)) {
+        cells.add([r, c]);
+        c++;
       }
 
-      for (int i = start; i <= end; i++) {
-        result.add(['$r-$i']);
+      return cells;
+    }
+
+    while (r > 0 && isWhite(r - 1, c)) {
+      r--;
+    }
+
+    final cells = <List<int>>[];
+
+    while (r < grid.length &&
+        isWhite(r, c)) {
+      cells.add([r, c]);
+      r++;
+    }
+
+    return cells;
+  }
+
+  List<int> getWordStart(
+    int row,
+    int col,
+    String direction,
+  ) {
+    int r = row;
+    int c = col;
+
+    if (direction == 'A') {
+      while (c > 0 && isWhite(r, c - 1)) {
+        c--;
       }
     } else {
-      int start = r;
-
-      while (start > 0 && isWhite(start - 1, c)) {
-        start--;
-      }
-
-      int end = r;
-
-      while (end < grid.length - 1 && isWhite(end + 1, c)) {
-        end++;
-      }
-
-      for (int i = start; i <= end; i++) {
-        result.add(['$i-$c']);
+      while (r > 0 && isWhite(r - 1, c)) {
+        r--;
       }
     }
 
-    return result;
+    return [r, c];
   }
 
-  bool isSelected(int row, int col) {
-    final cells = getSelectedCells();
+  bool isSelectedCell(int r, int c) {
+    if (selectedRow == null ||
+        selectedCol == null) {
+      return false;
+    }
+
+    final cells = getWordCells(
+      selectedRow!,
+      selectedCol!,
+      selectedDirection,
+    );
 
     return cells.any(
-      (cell) => cell[0] == '$row-$col',
+      (cell) =>
+          cell[0] == r &&
+          cell[1] == c,
     );
   }
 
-  void openLetterInput(int row, int col) {
-    if (!isWhite(row, col)) return;
+  void selectCell(int r, int c) {
+    if (!isWhite(r, c)) return;
 
-    setState(() {
-      selectedRow = row;
-      selectedCol = col;
-    });
+    if (selectedRow == r &&
+        selectedCol == c) {
+      if (hasAcross(r, c) &&
+          hasDown(r, c)) {
+        setState(() {
+          selectedDirection =
+              selectedDirection == 'A'
+                  ? 'D'
+                  : 'A';
+        });
+      }
+    } else {
+      String direction = selectedDirection;
 
-    final controller = TextEditingController(
-      text: answers['$row-$col'] ?? '',
+      if (direction == 'A' &&
+          !hasAcross(r, c)) {
+        direction = 'D';
+      }
+
+      if (direction == 'D' &&
+          !hasDown(r, c)) {
+        direction = 'A';
+      }
+
+      setState(() {
+        selectedRow = r;
+        selectedCol = c;
+        selectedDirection = direction;
+      });
+    }
+
+    final key = '$r-$c';
+
+    FocusScope.of(context).requestFocus(
+      focusNodes[key],
+    );
+  }
+
+  int getSelectedNumber() {
+    if (selectedRow == null ||
+        selectedCol == null) {
+      return 0;
+    }
+
+    final numbers = generateNumbers();
+
+    final start = getWordStart(
+      selectedRow!,
+      selectedCol!,
+      selectedDirection,
     );
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFFFFF8FF),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'అక్షరం నమోదు చేయండి',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+    return numbers['${start[0]}-${start[1]}'] ?? 0;
+  }
 
-              const SizedBox(height: 16),
+  int getSelectedLength() {
+    if (selectedRow == null ||
+        selectedCol == null) {
+      return 0;
+    }
 
-              TextField(
-                controller: controller,
-                autofocus: true,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'అక్షరం',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      answers['$row-$col'] = controller.text.trim();
-                    });
-
-                    Navigator.pop(context);
-                  },
-                  child: const Text(
-                    'నమోదు చేయండి',
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    return getWordCells(
+      selectedRow!,
+      selectedCol!,
+      selectedDirection,
+    ).length;
   }
 
   Widget buildCell(
-    int row,
-    int col,
+    int r,
+    int c,
     Map<String, int> numbers,
   ) {
-    if (!isWhite(row, col)) {
+    if (!isWhite(r, c)) {
       return Container(
         decoration: BoxDecoration(
           color: Colors.black,
@@ -314,17 +396,19 @@ class _CrosswordPageState extends State<CrosswordPage> {
       );
     }
 
-    final key = '$row-$col';
+    final key = '$r-$c';
+
+    final selected =
+        isSelectedCell(r, c);
+
     final number = numbers[key];
-    final selected = isSelected(row, col);
-    final value = answers[key] ?? '';
 
     return GestureDetector(
-      onTap: () => openLetterInput(row, col),
+      onTap: () => selectCell(r, c),
       child: Container(
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFFE5D5FF)
+              ? const Color(0xFFDCC8F4)
               : Colors.white,
           border: Border.all(
             color: selected
@@ -337,7 +421,7 @@ class _CrosswordPageState extends State<CrosswordPage> {
           children: [
             if (number != null)
               Positioned(
-                left: 4,
+                left: 3,
                 top: 2,
                 child: Text(
                   '$number',
@@ -349,14 +433,30 @@ class _CrosswordPageState extends State<CrosswordPage> {
                 ),
               ),
 
-            Center(
-              child: Text(
-                value,
+            Positioned.fill(
+              child: TextField(
+                controller: controllers[key],
+                focusNode: focusNodes[key],
+                textAlign: TextAlign.center,
+                textAlignVertical:
+                    TextAlignVertical.center,
                 style: const TextStyle(
                   fontSize: 23,
                   fontWeight: FontWeight.bold,
                   color: Colors.deepPurple,
                 ),
+                cursorColor: Colors.deepPurple,
+                decoration:
+                    const InputDecoration(
+                  border: InputBorder.none,
+                  contentPadding:
+                      EdgeInsets.only(
+                    top: 5,
+                  ),
+                ),
+                onTap: () {
+                  selectCell(r, c);
+                },
               ),
             ),
           ],
@@ -365,12 +465,112 @@ class _CrosswordPageState extends State<CrosswordPage> {
     );
   }
 
-  Widget buildClueSection(
+  Widget buildClueList(
     String title,
-    List<Map<String, String>> clues,
+    String direction,
+    List<String> clueTexts,
+    Map<String, int> numbers,
   ) {
+    int clueIndex = 0;
+
+    final widgets = <Widget>[];
+
+    for (int r = 0; r < grid.length; r++) {
+      for (int c = 0;
+          c < grid[r].length;
+          c++) {
+        final starts = direction == 'A'
+            ? startsAcross(r, c)
+            : startsDown(r, c);
+
+        if (!starts) continue;
+
+        if (clueIndex >= clueTexts.length) {
+          continue;
+        }
+
+        final number =
+            numbers['$r-$c']!;
+
+        final length = getWordCells(
+          r,
+          c,
+          direction,
+        ).length;
+
+        final selected =
+            selectedRow != null &&
+            selectedCol != null &&
+            getSelectedNumber() ==
+                number &&
+            selectedDirection ==
+                direction;
+
+        widgets.add(
+          GestureDetector(
+            onTap: () {
+              selectCell(r, c);
+            },
+            child: Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(
+                bottom: 8,
+              ),
+              padding:
+                  const EdgeInsets.symmetric(
+                vertical: 8,
+                horizontal: 10,
+              ),
+              decoration: BoxDecoration(
+                color: selected
+                    ? const Color(
+                        0xFFE7D9F7,
+                      )
+                    : Colors.transparent,
+                borderRadius:
+                    BorderRadius.circular(10),
+              ),
+              child: Row(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 35,
+                    child: Text(
+                      '$number.',
+                      style:
+                          const TextStyle(
+                        fontSize: 17,
+                        fontWeight:
+                            FontWeight.bold,
+                      ),
+                    ),
+                  ),
+
+                  Expanded(
+                    child: Text(
+                      '${clueTexts[clueIndex]} '
+                      '($length ${length == 1 ? 'అక్షరం' : 'అక్షరాలు'})',
+                      style:
+                          const TextStyle(
+                        fontSize: 17,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        clueIndex++;
+      }
+    }
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
       children: [
         Text(
           title,
@@ -380,40 +580,9 @@ class _CrosswordPageState extends State<CrosswordPage> {
           ),
         ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
 
-        ...clues.map(
-          (item) => Padding(
-            padding: const EdgeInsets.only(
-              bottom: 10,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 34,
-                  child: Text(
-                    '${item['number']}.',
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-
-                Expanded(
-                  child: Text(
-                    item['clue']!,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      height: 1.35,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        ...widgets,
       ],
     );
   }
@@ -424,19 +593,20 @@ class _CrosswordPageState extends State<CrosswordPage> {
 
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
+        backgroundColor:
+            const Color(0xFFEFE4F5),
         title: const Text(
           'పద గమనం',
           style: TextStyle(
             fontWeight: FontWeight.bold,
           ),
         ),
-        centerTitle: true,
-        backgroundColor: const Color(0xFFEFE4F5),
       ),
 
       body: Column(
         children: [
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
 
           const Text(
             'తెలుగు పద పజిల్',
@@ -446,7 +616,7 @@ class _CrosswordPageState extends State<CrosswordPage> {
             ),
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
 
           const Text(
             'స్కోర్: 0',
@@ -455,29 +625,37 @@ class _CrosswordPageState extends State<CrosswordPage> {
             ),
           ),
 
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
 
-          // FIXED CROSSWORD GRID
+          // FIXED GRID
           Padding(
-            padding: const EdgeInsets.symmetric(
+            padding:
+                const EdgeInsets.symmetric(
               horizontal: 12,
             ),
             child: AspectRatio(
               aspectRatio: 1,
               child: GridView.builder(
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: grid.length * grid[0].length,
+                physics:
+                    const NeverScrollableScrollPhysics(),
+                itemCount:
+                    grid.length *
+                        grid[0].length,
                 gridDelegate:
                     SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: grid[0].length,
+                  crossAxisCount:
+                      grid[0].length,
                 ),
-                itemBuilder: (context, index) {
-                  final row = index ~/ grid[0].length;
-                  final col = index % grid[0].length;
+                itemBuilder:
+                    (context, index) {
+                  final r =
+                      index ~/ grid[0].length;
+                  final c =
+                      index % grid[0].length;
 
                   return buildCell(
-                    row,
-                    col,
+                    r,
+                    c,
                     numbers,
                   );
                 },
@@ -485,50 +663,76 @@ class _CrosswordPageState extends State<CrosswordPage> {
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
+
+          // SELECTED WORD INFO
+          if (selectedRow != null)
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(
+                horizontal: 20,
+              ),
+              child: Text(
+                '${getSelectedNumber()}. '
+                '${selectedDirection == 'A' ? 'అడ్డంగా' : 'నిలువుగా'}'
+                ' • ${getSelectedLength()} అక్షరాలు',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.deepPurple,
+                ),
+              ),
+            ),
+
+          const SizedBox(height: 4),
 
           // ONLY CLUES SCROLL
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                22,
-                10,
-                22,
+              padding:
+                  const EdgeInsets.fromLTRB(
+                20,
+                8,
+                20,
                 30,
               ),
               child: Column(
                 crossAxisAlignment:
                     CrossAxisAlignment.start,
                 children: [
-                  buildClueSection(
+                  buildClueList(
                     'అడ్డంగా',
+                    'A',
                     acrossClues,
+                    numbers,
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 22),
 
-                  buildClueSection(
+                  buildClueList(
                     'నిలువుగా',
+                    'D',
                     downClues,
+                    numbers,
                   ),
 
                   const SizedBox(height: 20),
 
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton.icon(
+                    child: ElevatedButton(
                       onPressed: () {
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(
                           const SnackBar(
                             content: Text(
-                              'సమాధానాలు పరిశీలించబడుతున్నాయి...',
+                              'సమాధానాలు పరిశీలిస్తున్నాం...',
                             ),
                           ),
                         );
                       },
-                      icon: const Icon(Icons.check),
-                      label: const Text(
+                      child: const Text(
                         'సమాధానాలు పరిశీలించు',
                         style: TextStyle(
                           fontSize: 18,
