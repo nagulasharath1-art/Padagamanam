@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   create-flutter-project:
-    runs-on: ubuntu-latest
+    flutter create --project-name=padagamanam --platforms=android .
 
     steps:
       - name: Checkout repository
