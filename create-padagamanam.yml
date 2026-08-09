@@ -22,7 +22,7 @@ jobs:
       - name: Create Flutter project
         run: |
           if [ ! -f pubspec.yaml ]; then
-            flutter create --platforms=android .
+            flutter create --project-name=padagamanam --platforms=android .
           else
             echo "Flutter project already exists."
           fi
