@@ -1,0 +1,36 @@
+name: Create Padagamanam Flutter App
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create-flutter-app:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Create Flutter project
+        run: |
+          if [ ! -d "app" ]; then
+            flutter create --project-name=padagamanam --platforms=android app
+          else
+            echo "Flutter app already exists."
+          fi
+
+      - name: Commit Flutter project
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app
+          git diff --cached --quiet || git commit -m "Create Padagamanam Flutter app"
+          git push
