@@ -1,13 +1,9 @@
+import 'package:characters/characters.dart';
 import 'package:flutter/material.dart';
 
 void main() {
   runApp(const PadagamanamApp());
 }
-
-// ============================================================
-// PADAGAMANAM
-// Telugu Crossword
-// ============================================================
 
 class PadagamanamApp extends StatelessWidget {
   const PadagamanamApp({super.key});
@@ -19,1087 +15,599 @@ class PadagamanamApp extends StatelessWidget {
       title: 'పద గమనం',
       theme: ThemeData(
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFFFF9FF),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF673AB7),
+          seedColor: const Color(0xFF6A3FA0),
         ),
+        scaffoldBackgroundColor: const Color(0xFFF7F3EC),
       ),
-      home: const CrosswordPage(),
+      home: const PuzzleScreen(),
     );
   }
 }
 
-// ============================================================
-// POINT
-// ============================================================
-
-class GridPoint {
-  final int row;
-  final int col;
-
-  const GridPoint(this.row, this.col);
-
-  @override
-  bool operator ==(Object other) {
-    return other is GridPoint &&
-        other.row == row &&
-        other.col == col;
-  }
-
-  @override
-  int get hashCode => Object.hash(row, col);
+enum Direction {
+  across,
+  down,
 }
 
-// ============================================================
-// CROSSWORD ENTRY
-// ============================================================
-
-class CrosswordEntry {
-  final String id;
-  final bool across;
+class WordEntry {
+  final int number;
+  final String clue;
+  final List<String> answer;
   final int row;
   final int col;
+  final Direction direction;
 
-  // Each item represents ONE crossword cell.
-  final List<String> letters;
-
-  final String clue;
-
-  const CrosswordEntry({
-    required this.id,
-    required this.across,
+  const WordEntry({
+    required this.number,
+    required this.clue,
+    required this.answer,
     required this.row,
     required this.col,
-    required this.letters,
-    required this.clue,
+    required this.direction,
   });
 
-  int get length => letters.length;
-
-  List<GridPoint> get cells {
-    return List.generate(
-      letters.length,
-      (index) => GridPoint(
-        row + (across ? 0 : index),
-        col + (across ? index : 0),
-      ),
-    );
-  }
+  int get length => answer.length;
 }
 
-// ============================================================
-// CELL
-// ============================================================
+class PadagamanamPuzzle {
+  final String id;
+  final String title;
+  final String difficulty;
+  final int size;
+  final List<WordEntry> words;
 
-class CrosswordCell {
-  String answer;
-  String typed;
-
-  CrosswordCell({
-    this.answer = '',
-    this.typed = '',
+  const PadagamanamPuzzle({
+    required this.id,
+    required this.title,
+    required this.difficulty,
+    required this.size,
+    required this.words,
   });
-
-  bool get isCorrect =>
-      typed.trim().isNotEmpty &&
-      typed.trim() == answer.trim();
 }
 
-// ============================================================
-// CROSSWORD PAGE
-// ============================================================
+/*
+  TEST PUZZLE
 
-class CrosswordPage extends StatefulWidget {
-  const CrosswordPage({super.key});
+  Grid:
+
+  ■ 1 2 3 ■
+  ■ 4 5 6 ■
+  ■ ■ 7 8 ■
+  ■ ■ ■ ■ ■
+
+  Words:
+
+  కలము
+  కల
+  లయం
+  ముళ్లు
+  కళ్ళు
+
+  ప్రతి answerని Telugu grapheme clustersగా
+  విడిగా ఇస్తున్నాం.
+*/
+
+const testPuzzle = PadagamanamPuzzle(
+  id: 'PG-TEST-001',
+  title: 'పజిల్ 01',
+  difficulty: 'సులభం',
+  size: 5,
+  words: [
+    WordEntry(
+      number: 1,
+      clue: 'మాటను కాగితంపై నడిపించిన పాత సహచరుడు',
+      answer: ['క', 'ల', 'ము'],
+      row: 0,
+      col: 1,
+      direction: Direction.across,
+    ),
+
+    WordEntry(
+      number: 1,
+      clue: 'నిద్రలో మనసు వేసే సినిమా',
+      answer: ['క', 'ల'],
+      row: 0,
+      col: 1,
+      direction: Direction.down,
+    ),
+
+    WordEntry(
+      number: 2,
+      clue: 'శబ్దాల మధ్య కనిపించని అడుగు',
+      answer: ['ల', 'యం'],
+      row: 0,
+      col: 2,
+      direction: Direction.down,
+    ),
+
+    WordEntry(
+      number: 3,
+      clue: 'పువ్వును తాకే ముందు చేతిని ఆపేది',
+      answer: ['ము', 'ళ్ళు'],
+      row: 0,
+      col: 3,
+      direction: Direction.down,
+    ),
+
+    WordEntry(
+      number: 4,
+      clue: 'చూస్తాయి; కానీ తమను తాము చూడలేవు',
+      answer: ['క', 'ళ్ళు'],
+      row: 2,
+      col: 2,
+      direction: Direction.across,
+    ),
+  ],
+);
+
+class PuzzleScreen extends StatefulWidget {
+  const PuzzleScreen({super.key});
 
   @override
-  State<CrosswordPage> createState() => _CrosswordPageState();
+  State<PuzzleScreen> createState() => _PuzzleScreenState();
 }
 
-class _CrosswordPageState extends State<CrosswordPage> {
-  static const int gridSize = 11;
+class _PuzzleScreenState extends State<PuzzleScreen> {
+  final PadagamanamPuzzle puzzle = testPuzzle;
 
-  late final List<CrosswordEntry> entries;
+  late final List<List<String?>> solutionGrid;
+  late final List<List<bool>> activeCells;
 
-  final Map<GridPoint, CrosswordCell> cells = {};
-  final Map<GridPoint, int> numbers = {};
-  final Map<String, int> entryNumbers = {};
+  late final List<List<TextEditingController>> controllers;
+  late final List<List<FocusNode>> focusNodes;
 
-  final Map<GridPoint, TextEditingController> controllers = {};
-  final Map<GridPoint, FocusNode> focusNodes = {};
+  int selectedRow = 0;
+  int selectedCol = 1;
 
-  String? selectedEntryId;
-
-  int score = 0;
-
-  // ==========================================================
-  // INIT
-  // ==========================================================
+  final Set<String> checkedCells = {};
+  final Set<String> wrongCells = {};
 
   @override
   void initState() {
     super.initState();
 
-    entries = _createEntries();
+    solutionGrid = List.generate(
+      puzzle.size,
+      (_) => List<String?>.filled(puzzle.size, null),
+    );
 
-    _buildCrossword();
-    _createNumbering();
-  }
+    activeCells = List.generate(
+      puzzle.size,
+      (_) => List<bool>.filled(puzzle.size, false),
+    );
 
-  // ==========================================================
-  // CROSSWORD DATA
-  //
-  // IMPORTANT:
-  // Every crossing cell contains exactly the same Telugu unit.
-  // ==========================================================
+    _buildGrid();
 
-  List<CrosswordEntry> _createEntries() {
-    return const [
-
-      // --------------------------------------------------------
-      // 1. అడ్డం
-      // భారతం
-      // --------------------------------------------------------
-
-      CrosswordEntry(
-        id: 'A1',
-        across: true,
-        row: 0,
-        col: 1,
-        letters: [
-          'భా',
-          'ర',
-          'తం',
-        ],
-        clue: 'మన దేశానికి సాధారణంగా ఉపయోగించే పేరు',
+    controllers = List.generate(
+      puzzle.size,
+      (_) => List.generate(
+        puzzle.size,
+        (_) => TextEditingController(),
       ),
+    );
 
-      // --------------------------------------------------------
-      // 2. నిలువు
-      // తండ్రి
-      // తం + డ్రి
-      // --------------------------------------------------------
-
-      CrosswordEntry(
-        id: 'D1',
-        across: false,
-        row: 0,
-        col: 3,
-        letters: [
-          'తం',
-          'డ్రి',
-        ],
-        clue: 'ఇంటి పెద్దగా భావించే వ్యక్తి',
+    focusNodes = List.generate(
+      puzzle.size,
+      (_) => List.generate(
+        puzzle.size,
+        (_) => FocusNode(),
       ),
-
-      // --------------------------------------------------------
-      // 3. అడ్డం
-      // రాజమండ్రి
-      // రా + జ + మం + డ్రి
-      // --------------------------------------------------------
-
-      CrosswordEntry(
-        id: 'A2',
-        across: true,
-        row: 1,
-        col: 0,
-        letters: [
-          'రా',
-          'జ',
-          'మం',
-          'డ్రి',
-        ],
-        clue: 'గోదావరి తీరంలోని ప్రసిద్ధ నగరం',
-      ),
-
-      // --------------------------------------------------------
-      // 4. నిలువు
-      // రాముడు
-      // రా + మ + డు
-      // --------------------------------------------------------
-
-      CrosswordEntry(
-        id: 'D2',
-        across: false,
-        row: 1,
-        col: 0,
-        letters: [
-          'రా',
-          'మ',
-          'డు',
-        ],
-        clue: 'అయోధ్యకు చెందిన యువరాజు',
-      ),
-
-      // --------------------------------------------------------
-      // 5. అడ్డం
-      // మనసు
-      // --------------------------------------------------------
-
-      CrosswordEntry(
-        id: 'A3',
-        across: true,
-        row: 2,
-        col: 0,
-        letters: [
-          'మ',
-          'న',
-          'సు',
-        ],
-        clue: 'భావాలు, ఆలోచనలు నిలిచే అంతరంగం',
-      ),
-
-      // --------------------------------------------------------
-      // 6. నిలువు
-      // నది
-      // --------------------------------------------------------
-
-      CrosswordEntry(
-        id: 'D3',
-        across: false,
-        row: 2,
-        col: 1,
-        letters: [
-          'న',
-          'ది',
-        ],
-        clue: 'ప్రవహించే జలధార',
-      ),
-
-      // --------------------------------------------------------
-      // 7. అడ్డం
-      // నీరు
-      // --------------------------------------------------------
-
-      CrosswordEntry(
-        id: 'A4',
-        across: true,
-        row: 4,
-        col: 0,
-        letters: [
-          'నీ',
-          'రు',
-        ],
-        clue: 'జీవరాశులకు అత్యవసరమైన ద్రవం',
-      ),
-
-      // --------------------------------------------------------
-      // 8. నిలువు
-      // రుచి
-      // --------------------------------------------------------
-
-      CrosswordEntry(
-        id: 'D4',
-        across: false,
-        row: 4,
-        col: 1,
-        letters: [
-          'రు',
-          'చి',
-        ],
-        clue: 'ఆహారం ద్వారా తెలిసే అనుభూతి',
-      ),
-
-      // --------------------------------------------------------
-      // 9. అడ్డం
-      // కల
-      // --------------------------------------------------------
-
-      CrosswordEntry(
-        id: 'A5',
-        across: true,
-        row: 6,
-        col: 0,
-        letters: [
-          'క',
-          'ల',
-        ],
-        clue: 'నిద్రలో కనిపించేది',
-      ),
-
-      // --------------------------------------------------------
-      // 10. నిలువు
-      // లత
-      // --------------------------------------------------------
-
-      CrosswordEntry(
-        id: 'D5',
-        across: false,
-        row: 6,
-        col: 1,
-        letters: [
-          'ల',
-          'త',
-        ],
-        clue: 'ఆధారం చేసుకుని పెరిగే సన్నని మొక్క',
-      ),
-
-      // --------------------------------------------------------
-      // 11. అడ్డం
-      // మంచు
-      // --------------------------------------------------------
-
-      CrosswordEntry(
-        id: 'A6',
-        across: true,
-        row: 8,
-        col: 2,
-        letters: [
-          'మం',
-          'చు',
-        ],
-        clue: 'చలిలో గడ్డకట్టిన నీటి రూపం',
-      ),
-
-      // --------------------------------------------------------
-      // 12. నిలువు
-      // చుక్క
-      // --------------------------------------------------------
-
-      CrosswordEntry(
-        id: 'D6',
-        across: false,
-        row: 8,
-        col: 3,
-        letters: [
-          'చు',
-          'క్క',
-        ],
-        clue: 'చిన్న బిందువు లేదా గుర్తు',
-      ),
-
-      // --------------------------------------------------------
-      // 13. అడ్డం
-      // జలం
-      // --------------------------------------------------------
-
-      CrosswordEntry(
-        id: 'A7',
-        across: true,
-        row: 10,
-        col: 1,
-        letters: [
-          'జ',
-          'లం',
-        ],
-        clue: 'నీటికి మరో పేరు',
-      ),
-    ];
-  }
-
-  // ==========================================================
-  // BUILD CROSSWORD
-  // ==========================================================
-
-  void _buildCrossword() {
-    for (final entry in entries) {
-      for (int i = 0; i < entry.letters.length; i++) {
-        final point = GridPoint(
-          entry.row + (entry.across ? 0 : i),
-          entry.col + (entry.across ? i : 0),
-        );
-
-        final answer = entry.letters[i];
-
-        if (!cells.containsKey(point)) {
-          cells[point] = CrosswordCell(
-            answer: answer,
-          );
-
-          controllers[point] =
-              TextEditingController();
-
-          focusNodes[point] =
-              FocusNode();
-        } else {
-          // ----------------------------------------------------
-          // CROSSING VALIDATION
-          // ----------------------------------------------------
-
-          if (cells[point]!.answer != answer) {
-            debugPrint(
-              'Crossing mismatch at '
-              '${point.row}, ${point.col}: '
-              '${cells[point]!.answer} != $answer',
-            );
-          }
-        }
-      }
-    }
-  }
-
-  // ==========================================================
-  // STANDARD CROSSWORD NUMBERING
-  //
-  // Number is assigned only to the starting square of a clue.
-  // Same square shared by Across + Down gets SAME number.
-  // ==========================================================
-
-  void _createNumbering() {
-    final startPoints = <GridPoint>{};
-
-    for (final entry in entries) {
-      startPoints.add(
-        GridPoint(
-          entry.row,
-          entry.col,
-        ),
-      );
-    }
-
-    final sorted = startPoints.toList();
-
-    sorted.sort((a, b) {
-      if (a.row != b.row) {
-        return a.row.compareTo(b.row);
-      }
-
-      return a.col.compareTo(b.col);
-    });
-
-    int number = 1;
-
-    for (final point in sorted) {
-      numbers[point] = number;
-
-      for (final entry in entries) {
-        if (entry.row == point.row &&
-            entry.col == point.col) {
-          entryNumbers[entry.id] = number;
-        }
-      }
-
-      number++;
-    }
-  }
-
-  // ==========================================================
-  // SELECT ENTRY
-  // ==========================================================
-
-  void _selectEntry(CrosswordEntry entry) {
-    setState(() {
-      selectedEntryId = entry.id;
-    });
-  }
-
-  // ==========================================================
-  // SELECT CELL
-  // ==========================================================
-
-  void _selectCell(GridPoint point) {
-    final matchingEntries = entries.where(
-      (entry) => entry.cells.contains(point),
-    ).toList();
-
-    if (matchingEntries.isEmpty) {
-      return;
-    }
-
-    CrosswordEntry selected;
-
-    if (selectedEntryId != null) {
-      final current = entries.where(
-        (entry) => entry.id == selectedEntryId,
-      );
-
-      if (current.isNotEmpty &&
-          current.first.cells.contains(point)) {
-        selected = current.first;
-      } else {
-        selected = matchingEntries.first;
-      }
-    } else {
-      selected = matchingEntries.first;
-    }
-
-    _selectEntry(selected);
-
-    Future.delayed(
-      const Duration(milliseconds: 80),
-      () {
-        if (!mounted) return;
-
-        focusNodes[point]?.requestFocus();
-      },
     );
   }
 
-  // ==========================================================
-  // LETTER INPUT
-  // ==========================================================
+  void _buildGrid() {
+    for (final word in puzzle.words) {
+      for (int i = 0; i < word.answer.length; i++) {
+        final row = word.direction == Direction.down
+            ? word.row + i
+            : word.row;
 
-  void _onLetterChanged(
-    GridPoint point,
-    String value,
-  ) {
-    if (!cells.containsKey(point)) {
+        final col = word.direction == Direction.across
+            ? word.col + i
+            : word.col;
+
+        final letter = word.answer[i];
+
+        solutionGrid[row][col] = letter;
+        activeCells[row][col] = true;
+      }
+    }
+  }
+
+  String _cellKey(int row, int col) => '$row-$col';
+
+  bool _isCorrect(int row, int col) {
+    final expected = solutionGrid[row][col];
+
+    if (expected == null) {
+      return false;
+    }
+
+    final typed = controllers[row][col].text.characters.toList();
+
+    if (typed.isEmpty) {
+      return false;
+    }
+
+    return typed.first == expected;
+  }
+
+  void _handleInput(int row, int col, String value) {
+    final chars = value.characters.toList();
+
+    if (chars.isEmpty) {
+      wrongCells.remove(_cellKey(row, col));
+      checkedCells.remove(_cellKey(row, col));
+
+      setState(() {});
       return;
     }
 
-    final text = value.trim();
+    final firstCharacter = chars.first;
 
-    setState(() {
-      cells[point]!.typed = text;
-      _calculateScore();
-    });
+    controllers[row][col].value = TextEditingValue(
+      text: firstCharacter,
+      selection: TextSelection.collapsed(
+        offset: firstCharacter.length,
+      ),
+    );
 
-    // --------------------------------------------------------
-    // IMPORTANT
-    //
-    // We DO NOT automatically move to another cell.
-    // The typed letter stays fixed inside this exact box.
-    // --------------------------------------------------------
+    checkedCells.remove(_cellKey(row, col));
+    wrongCells.remove(_cellKey(row, col));
+
+    _moveToNextCell(row, col);
+
+    setState(() {});
   }
 
-  // ==========================================================
-  // SCORE
-  // ==========================================================
+  void _moveToNextCell(int row, int col) {
+    for (int c = col + 1; c < puzzle.size; c++) {
+      if (activeCells[row][c]) {
+        _selectCell(row, c);
+        return;
+      }
+    }
 
-  void _calculateScore() {
+    for (int r = row + 1; r < puzzle.size; r++) {
+      if (activeCells[r][col]) {
+        _selectCell(r, col);
+        return;
+      }
+    }
+  }
+
+  void _selectCell(int row, int col) {
+    if (!activeCells[row][col]) {
+      return;
+    }
+
+    setState(() {
+      selectedRow = row;
+      selectedCol = col;
+    });
+
+    FocusScope.of(context).requestFocus(
+      focusNodes[row][col],
+    );
+  }
+
+  void _checkAnswers() {
+    int total = 0;
     int correct = 0;
 
-    for (final cell in cells.values) {
-      if (cell.isCorrect) {
-        correct++;
+    checkedCells.clear();
+    wrongCells.clear();
+
+    for (int row = 0; row < puzzle.size; row++) {
+      for (int col = 0; col < puzzle.size; col++) {
+        if (!activeCells[row][col]) {
+          continue;
+        }
+
+        total++;
+
+        final key = _cellKey(row, col);
+        checkedCells.add(key);
+
+        if (_isCorrect(row, col)) {
+          correct++;
+        } else {
+          wrongCells.add(key);
+        }
       }
     }
 
-    score = correct;
-  }
+    setState(() {});
 
-  // ==========================================================
-  // SELECTED CELL
-  // ==========================================================
+    final completed = correct == total;
 
-  bool _isSelected(GridPoint point) {
-    if (selectedEntryId == null) {
-      return false;
-    }
-
-    final selected = entries.where(
-      (entry) => entry.id == selectedEntryId,
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            completed
+                ? 'పజిల్ పూర్తయింది 🎉'
+                : 'మళ్ళీ ప్రయత్నించు',
+          ),
+          content: Text(
+            completed
+                ? 'అద్భుతం! అన్ని జవాబులు సరైనవి.'
+                : '$correct / $total అక్షరాలు సరైనవి.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('సరే'),
+            ),
+          ],
+        );
+      },
     );
-
-    if (selected.isEmpty) {
-      return false;
-    }
-
-    return selected.first.cells.contains(point);
   }
 
-  // ==========================================================
-  // CELL BACKGROUND
-  // ==========================================================
-
-  Color _cellBackground(GridPoint point) {
-    final cell = cells[point]!;
-
-    // Correct = GREEN
-    if (cell.isCorrect) {
-      return const Color(0xFFB9EBC4);
+  Widget _buildCell(int row, int col) {
+    if (!activeCells[row][col]) {
+      return Container(
+        margin: const EdgeInsets.all(1.5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF29252D),
+          borderRadius: BorderRadius.circular(4),
+        ),
+      );
     }
 
-    // Selected word = PURPLE
-    if (_isSelected(point)) {
-      return const Color(0xFFE1D2FF);
-    }
+    final key = _cellKey(row, col);
+    final selected = row == selectedRow && col == selectedCol;
+    final wrong = wrongCells.contains(key);
 
-    // Normal = WHITE
-    return Colors.white;
-  }
-
-  // ==========================================================
-  // CELL BORDER
-  // ==========================================================
-
-  Color _cellBorder(GridPoint point) {
-    if (_isSelected(point)) {
-      return const Color(0xFF673AB7);
-    }
-
-    return const Color(0xFF333333);
-  }
-
-  // ==========================================================
-  // BUILD CELL
-  // ==========================================================
-
-  Widget _buildCell(GridPoint point) {
-    final cell = cells[point]!;
-
-    final number = numbers[point];
-
-    final controller = controllers[point]!;
+    final borderColor = selected
+        ? const Color(0xFF7B3FC6)
+        : Colors.black87;
 
     return GestureDetector(
-      onTap: () {
-        _selectCell(point);
-      },
+      onTap: () => _selectCell(row, col),
       child: Container(
+        margin: const EdgeInsets.all(1.5),
         decoration: BoxDecoration(
-          color: _cellBackground(point),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(4),
           border: Border.all(
-            color: _cellBorder(point),
-            width: _isSelected(point) ? 2.0 : 1.0,
+            color: borderColor,
+            width: selected ? 3 : 1,
           ),
         ),
-        child: Stack(
-          children: [
-
-            // ------------------------------------------------
-            // NUMBER
-            // ------------------------------------------------
-
-            if (number != null)
-              Positioned(
-                left: 3,
-                top: 2,
-                child: Text(
-                  '$number',
-                  style: const TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-
-            // ------------------------------------------------
-            // LETTER
-            // ------------------------------------------------
-
-            Positioned.fill(
-              child: Center(
-                child: TextField(
-                  controller: controller,
-                  focusNode: focusNodes[point],
-
-                  // No cursor.
-                  showCursor: false,
-
-                  // One line only.
-                  maxLines: 1,
-
-                  // We don't want Flutter's counter.
-                  maxLength: 8,
-
-                  textAlign: TextAlign.center,
-
-                  textAlignVertical:
-                      TextAlignVertical.center,
-
-                  style: const TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black,
-                    height: 1.0,
-                  ),
-
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    counterText: '',
-                    isCollapsed: true,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-
-                  onTap: () {
-                    _selectCell(point);
-                  },
-
-                  onChanged: (value) {
-                    _onLetterChanged(
-                      point,
-                      value,
-                    );
-                  },
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==========================================================
-  // GRID
-  // ==========================================================
-
-  Widget _buildGrid() {
-    return AspectRatio(
-      aspectRatio: 1,
-      child: GridView.builder(
-        physics:
-            const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.zero,
-        gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: gridSize,
-        ),
-        itemCount: gridSize * gridSize,
-        itemBuilder: (context, index) {
-          final row = index ~/ gridSize;
-          final col = index % gridSize;
-
-          final point = GridPoint(
-            row,
-            col,
-          );
-
-          // --------------------------------------------------
-          // BLACK BLOCK
-          // --------------------------------------------------
-
-          if (!cells.containsKey(point)) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFF202124),
-              ),
-            );
-          }
-
-          return _buildCell(point);
-        },
-      ),
-    );
-  }
-
-  // ==========================================================
-  // CLUE ITEM
-  // ==========================================================
-
-  Widget _buildClue(
-    CrosswordEntry entry,
-  ) {
-    final number =
-        entryNumbers[entry.id] ?? 0;
-
-    final selected =
-        selectedEntryId == entry.id;
-
-    final direction =
-        entry.across ? 'అడ్డం' : 'నిలువు';
-
-    return GestureDetector(
-      onTap: () {
-        _selectEntry(entry);
-      },
-      child: AnimatedContainer(
-        duration:
-            const Duration(milliseconds: 150),
-        width: double.infinity,
-        margin:
-            const EdgeInsets.only(bottom: 8),
-        padding:
-            const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
-        ),
-        decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFFE1D2FF)
-              : const Color(0xFFF1F3F6),
-          borderRadius:
-              BorderRadius.circular(10),
-          border: Border.all(
-            color: selected
-                ? const Color(0xFF673AB7)
-                : Colors.transparent,
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
-          children: [
-
-            // NUMBER
-            Text(
-              '$number.',
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-
-            const SizedBox(width: 7),
-
-            // DIRECTION
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(
-                horizontal: 6,
-                vertical: 3,
-              ),
-              decoration: BoxDecoration(
-                color: selected
-                    ? const Color(0xFF673AB7)
-                    : Colors.black87,
-                borderRadius:
-                    BorderRadius.circular(5),
-              ),
-              child: Text(
-                direction,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-
-            const SizedBox(width: 8),
-
-            // CLUE + LENGTH
-            Expanded(
-              child: Text(
-                '${entry.clue} '
-                '(${entry.length} అక్షరాలు)',
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w500,
-                  height: 1.35,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==========================================================
-  // CLUES
-  // ==========================================================
-
-  Widget _buildClues() {
-    final acrossEntries = entries
-        .where((entry) => entry.across)
-        .toList();
-
-    final downEntries = entries
-        .where((entry) => !entry.across)
-        .toList();
-
-    acrossEntries.sort(
-      (a, b) => (entryNumbers[a.id] ?? 0)
-          .compareTo(entryNumbers[b.id] ?? 0),
-    );
-
-    downEntries.sort(
-      (a, b) => (entryNumbers[a.id] ?? 0)
-          .compareTo(entryNumbers[b.id] ?? 0),
-    );
-
-    return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
-      children: [
-
-        // ----------------------------------------------------
-        // ACROSS
-        // ----------------------------------------------------
-
-        const Padding(
-          padding: EdgeInsets.only(
-            bottom: 10,
-          ),
-          child: Text(
-            'అడ్డం',
+        child: Center(
+          child: TextField(
+            controller: controllers[row][col],
+            focusNode: focusNodes[row][col],
+            onTap: () => _selectCell(row, col),
+            onChanged: (value) {
+              _handleInput(row, col, value);
+            },
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            maxLength: 6,
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF673AB7),
+              fontSize: 23,
+              fontWeight: FontWeight.w700,
+              color: wrong
+                  ? Colors.red
+                  : Colors.black,
+            ),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              counterText: '',
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
             ),
           ),
         ),
-
-        ...acrossEntries.map(
-          _buildClue,
-        ),
-
-        const SizedBox(height: 18),
-
-        // ----------------------------------------------------
-        // DOWN
-        // ----------------------------------------------------
-
-        const Padding(
-          padding: EdgeInsets.only(
-            bottom: 10,
-          ),
-          child: Text(
-            'నిలువు',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF673AB7),
-            ),
-          ),
-        ),
-
-        ...downEntries.map(
-          _buildClue,
-        ),
-      ],
+      ),
     );
   }
 
-  // ==========================================================
-  // HEADER
-  // ==========================================================
+  Widget _clueItem(WordEntry word) {
+    final directionText =
+        word.direction == Direction.across
+            ? 'అడ్డం'
+            : 'నిలువు';
 
-  Widget _buildHeader() {
-    final total = cells.length;
-
-    return Column(
-      children: [
-
-        const SizedBox(height: 8),
-
-        const Text(
-          'పద గమనం',
-          style: TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.5,
-          ),
-        ),
-
-        const SizedBox(height: 4),
-
-        const Text(
-          'తెలుగు పద పజిల్',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-
-        const SizedBox(height: 8),
-
-        Row(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
-          children: [
-            const Text(
-              'స్కోర్: ',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8DDF2),
+              borderRadius: BorderRadius.circular(8),
             ),
-            Text(
-              '$score / $total',
+            child: Text(
+              '${word.number}',
               style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF673AB7),
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ],
-        ),
+          ),
 
-        const SizedBox(height: 16),
-      ],
+          const SizedBox(width: 10),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  word.clue,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  directionText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  // ==========================================================
-  // MAIN BUILD
-  // ==========================================================
+  @override
+  void dispose() {
+    for (final row in controllers) {
+      for (final controller in row) {
+        controller.dispose();
+      }
+    }
+
+    for (final row in focusNodes) {
+      for (final node in row) {
+        node.dispose();
+      }
+    }
+
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final across = puzzle.words
+        .where((word) => word.direction == Direction.across)
+        .toList();
+
+    final down = puzzle.words
+        .where((word) => word.direction == Direction.down)
+        .toList();
+
     return Scaffold(
       appBar: AppBar(
-        centerTitle: true,
-        backgroundColor:
-            const Color(0xFFEDE2F8),
         title: const Text(
           'పద గమనం',
           style: TextStyle(
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
+        centerTitle: true,
       ),
-
       body: SafeArea(
         child: SingleChildScrollView(
-          padding:
-              const EdgeInsets.fromLTRB(
-            14,
-            10,
-            14,
+          padding: const EdgeInsets.fromLTRB(
+            18,
+            12,
+            18,
             30,
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
-              // HEADER
-              _buildHeader(),
-
-              // ------------------------------------------------
-              // GRID
-              // ------------------------------------------------
-
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius:
-                      BorderRadius.circular(4),
-                  boxShadow: const [
-                    BoxShadow(
-                      blurRadius: 5,
-                      offset: Offset(0, 2),
-                      color: Colors.black12,
-                    ),
-                  ],
+              Text(
+                puzzle.title,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
                 ),
-                child: _buildGrid(),
               ),
+
+              const SizedBox(height: 4),
+
+              Text(
+                puzzle.difficulty,
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontSize: 14,
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
+              Center(
+                child: SizedBox(
+                  width: 330,
+                  height: 330,
+                  child: GridView.builder(
+                    physics:
+                        const NeverScrollableScrollPhysics(),
+                    itemCount:
+                        puzzle.size * puzzle.size,
+                    gridDelegate:
+                        SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: puzzle.size,
+                    ),
+                    itemBuilder: (context, index) {
+                      final row =
+                          index ~/ puzzle.size;
+                      final col =
+                          index % puzzle.size;
+
+                      return _buildCell(row, col);
+                    },
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              const Text(
+                'అడ్డంగా',
+                style: TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              ...across.map(_clueItem),
+
+              const SizedBox(height: 18),
+
+              const Text(
+                'నిలువుగా',
+                style: TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              ...down.map(_clueItem),
 
               const SizedBox(height: 20),
 
-              // ------------------------------------------------
-              // CLUES
-              // ------------------------------------------------
-
-              Container(
+              SizedBox(
                 width: double.infinity,
-                padding:
-                    const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEAF0FF),
-                  borderRadius:
-                      BorderRadius.circular(16),
+                height: 56,
+                child: FilledButton(
+                  onPressed: _checkAnswers,
+                  child: const Text(
+                    'జవాబులను తనిఖీ చేయి',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
-                child: _buildClues(),
               ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  // ==========================================================
-  // DISPOSE
-  // ==========================================================
-
-  @override
-  void dispose() {
-    for (final controller
-        in controllers.values) {
-      controller.dispose();
-    }
-
-    for (final node
-        in focusNodes.values) {
-      node.dispose();
-    }
-
-    super.dispose();
   }
 }
